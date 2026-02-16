@@ -6,14 +6,12 @@
 	import { onMount } from 'svelte';
 	import { LocalStorage } from '$lib/hooks/local-storage.svelte';
 	import { innerWidth } from 'svelte/reactivity/window';
-	import type { Attachment } from 'ai';
 	import { toast } from 'svelte-sonner';
 	import { Button } from './ui/button';
 	import PaperclipIcon from './icons/paperclip.svelte';
 	import StopIcon from './icons/stop.svelte';
 	import ArrowUpIcon from './icons/arrow-up.svelte';
 	import SuggestedActions from './suggested-actions.svelte';
-	import { replaceState } from '$app/navigation';
 	import type { User } from '$lib/server/db/schema';
 
 	let {
@@ -22,7 +20,7 @@
 		chatClient,
 		class: c
 	}: {
-		attachments: Attachment[];
+		attachments: Array<{ url: string; name: string; contentType: string }>;
 		user: User | undefined;
 		chatClient: Chat;
 		class?: string;
@@ -32,6 +30,7 @@
 	let textareaRef = $state<HTMLTextAreaElement | null>(null);
 	let fileInputRef = $state<HTMLInputElement | null>(null);
 	let uploadQueue = $state<string[]>([]);
+	let input = $state('');
 	const storedInput = new LocalStorage('input', '');
 	const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
 
@@ -49,22 +48,17 @@
 		}
 	};
 
-	function setInput(value: string) {
-		chatClient.input = value;
-		adjustHeight();
-	}
+	async function submitForm() {
+		if (!input.trim()) return;
 
-	async function submitForm(event?: Event) {
-		if (user) {
-			replaceState(`/chat/${chatClient.id}`, {});
-		}
+		const messageText = input;
+		input = '';
+		storedInput.value = '';
+		resetHeight();
 
-		await chatClient.handleSubmit(event, {
-			experimental_attachments: attachments
-		});
+		await chatClient.sendMessage({ text: messageText });
 
 		attachments = [];
-		resetHeight();
 
 		if (innerWidth.current && innerWidth.current > 768) {
 			textareaRef?.focus();
@@ -122,13 +116,13 @@
 	}
 
 	onMount(() => {
-		chatClient.input = storedInput.value;
+		input = storedInput.value;
 		adjustHeight();
 		mounted = true;
 	});
 
 	$effect.pre(() => {
-		storedInput.value = chatClient.input;
+		storedInput.value = input;
 	});
 </script>
 
@@ -165,10 +159,11 @@
 		</div>
 	{/if}
 
-	<Textarea
-		bind:ref={textareaRef}
+	<textarea
+		bind:this={textareaRef}
 		placeholder="Send a message..."
-		bind:value={() => chatClient.input, setInput}
+		bind:value={input}
+		oninput={adjustHeight}
 		class={cn(
 			'bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700',
 			c
@@ -186,7 +181,7 @@
 				}
 			}
 		}}
-	/>
+	></textarea>
 
 	<div class="absolute bottom-0 flex w-fit flex-row justify-start p-2">
 		{@render attachmentsButton()}
@@ -220,8 +215,7 @@
 		class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
 		onclick={(event) => {
 			event.preventDefault();
-			stop();
-			chatClient.messages = chatClient.messages;
+			chatClient.stop();
 		}}
 	>
 		<StopIcon size={14} />
@@ -235,7 +229,7 @@
 			event.preventDefault();
 			submitForm();
 		}}
-		disabled={chatClient.input.length === 0 || uploadQueue.length > 0}
+		disabled={!input || input.trim().length === 0 || uploadQueue.length > 0}
 	>
 		<ArrowUpIcon size={14} />
 	</Button>

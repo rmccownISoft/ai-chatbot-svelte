@@ -1,16 +1,9 @@
 <script lang="ts">
-	import AppSidebar from '$lib/components/app-sidebar.svelte';
-	import { SidebarInset, SidebarProvider } from '$lib/components/ui/sidebar';
-	import { ChatHistory } from '$lib/hooks/chat-history.svelte.js';
+	import '$lib/../app.css';
 
-	let { data, children } = $props();
-
-	const chatHistory = new ChatHistory(data.chats);
-	chatHistory.setContext();
-	data.selectedChatModel.setContext();
+	let { children } = $props();
 </script>
 
-<SidebarProvider open={!data.sidebarCollapsed}>
-	<AppSidebar user={data.user} />
-	<SidebarInset>{@render children?.()}</SidebarInset>
-</SidebarProvider>
+<div class="flex h-screen w-full">
+	{@render children()}
+</div>

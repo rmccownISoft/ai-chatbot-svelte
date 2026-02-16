@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/shadcn';
 	import SparklesIcon from '../icons/sparkles.svelte';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 	import { Button } from '../ui/button';
 	import PencilEditIcon from '../icons/pencil-edit.svelte';
 	import PreviewAttachment from '../preview-attachment.svelte';
@@ -57,23 +56,16 @@
 					{#if mode === 'view'}
 						<div class="flex flex-row items-start gap-2">
 							{#if message.role === 'user' && !readonly}
-								<Tooltip>
-									<TooltipTrigger>
-										{#snippet child({ props })}
-											<Button
-												{...props}
-												variant="ghost"
-												class="text-muted-foreground h-fit rounded-full px-2 opacity-0 group-hover/message:opacity-100"
-												onclick={() => {
-													mode = 'edit';
-												}}
-											>
-												<PencilEditIcon />
-											</Button>
-										{/snippet}
-									</TooltipTrigger>
-									<TooltipContent>Edit message</TooltipContent>
-								</Tooltip>
+								<Button
+									variant="ghost"
+									class="text-muted-foreground h-fit rounded-full px-2 opacity-0 group-hover/message:opacity-100"
+									onclick={() => {
+										mode = 'edit';
+									}}
+									title="Edit message"
+								>
+									<PencilEditIcon />
+								</Button>
 							{/if}
 							<div
 								class={cn('flex flex-col gap-4', {
